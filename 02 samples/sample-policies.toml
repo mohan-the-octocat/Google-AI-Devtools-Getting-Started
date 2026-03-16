@@ -99,3 +99,21 @@ decision = "ask_user"
 priority = 50
 toolName = "mcp_*"
 decision = "ask_user"
+
+# ------------------------------------------------------------------------------
+# Example 6: Completely Deny an MCP Server
+# ------------------------------------------------------------------------------
+# We give these deny rules a higher priority number (e.g., 200) than the
+# allow or ask_user rules so that the denial takes precedence.
+
+# Deny an entire MCP server and all its tools by its configured name
+[[rule]]
+priority = 200
+mcpName = "mcp-server-name-to-deny"
+decision = "deny"
+
+# Deny all tools from a specific MCP server using a wildcard on the toolName
+[[rule]]
+priority = 200
+toolName = "mcp_github_*"
+decision = "deny"
