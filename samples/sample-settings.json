@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "google-workspace": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@google/mcp-google-workspace"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
+      }
+    },
+    "sqlite": {
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "/path/to/your/database.db"
+      ]
+    }
+  }
+}

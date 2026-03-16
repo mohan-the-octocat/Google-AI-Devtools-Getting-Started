@@ -1,1 +1,101 @@
-This file contains all the sample configurations for Gemini CLI policies.   
+# ==============================================================================
+# Gemini CLI Sample Policy Configuration
+#
+# This file contains sample configurations for Gemini CLI policies.
+# Copy this file to ~/.gemini/policies/ (macOS/Linux) or 
+# $env:USERPROFILE\.gemini\policies\ (Windows) to apply these rules.
+#
+# Policies are evaluated based on their priority. The first matching rule
+# determines the outcome for a given tool call.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Example 1: Allow Safe Read-Only Commands
+# ------------------------------------------------------------------------------
+# Allow common read-only commands without requiring user confirmation.
+[[rule]]
+priority = 100
+toolName = "run_command"
+decision = "allow"
+commandPrefix = [
+  "git status",
+  "git log",
+  "git branch",
+  "git diff",
+  "ls",
+  "cat",
+  "echo"
+]
+
+# ------------------------------------------------------------------------------
+# Example 2: Deny Destructive Commands
+# ------------------------------------------------------------------------------
+# Explicitly deny commands that could be excessively destructive.
+[[rule]]
+priority = 200
+toolName = "run_command"
+decision = "deny"
+commandPrefix = [
+  "rm -rf /",
+  "mkfs"
+]
+
+# ------------------------------------------------------------------------------
+# Example 3: Require User Confirmation
+# ------------------------------------------------------------------------------
+# Require explicit user confirmation before executing potentially
+# state-mutating commands like pushing code or removing files.
+[[rule]]
+priority = 150
+toolName = "run_command"
+decision = "ask_user"
+commandPrefix = [
+  "git push",
+  "rm",
+  "mv",
+  "cp"
+]
+
+# ------------------------------------------------------------------------------
+# Example 4: Tool-Specific Policies
+# ------------------------------------------------------------------------------
+# Allow the CLI to read files or search the web without prompting every time.
+[[rule]]
+priority = 100
+toolName = "read_file"
+decision = "allow"
+
+[[rule]]
+priority = 100
+toolName = "search_web"
+decision = "allow"
+
+# ------------------------------------------------------------------------------
+# Example 5: MCP Server Policies
+# ------------------------------------------------------------------------------
+# Policies can match specific MCP servers or use wildcards to match tools.
+
+# Allow all tools from a specific MCP server by its configured name
+[[rule]]
+priority = 100
+mcpName = "google-workspace"
+decision = "allow"
+
+# Require user confirmation for any tool from a specific MCP server
+[[rule]]
+priority = 150
+mcpName = "custom-database-mcp"
+decision = "ask_user"
+
+# Target specific MCP tools using wildcards in the toolName
+# MCP tool names typically follow the format: mcp_[serverName]_[toolName]
+[[rule]]
+priority = 120
+toolName = "mcp_github_create_issue"
+decision = "ask_user"
+
+# Globally target all MCP tools using a wildcard
+[[rule]]
+priority = 50
+toolName = "mcp_*"
+decision = "ask_user"
