@@ -1,0 +1,29 @@
+name: DevSat Feedback Request
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  request-feedback:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment with Feedback Link
+        uses: actions/github-script@v6
+        with:
+          script: |
+            // Replace external form URL with actual DevSat survey link
+            // You can append dynamic query parameters like PR Author or PR Number
+            const formUrl = `https://forms.example.com/devsat?pr=${context.issue.number}&user=${context.actor}`;
+            
+            const body = `### 📝 We want your feedback!\n\n` +
+                         `Thanks for opening this PR. To help us improve the developer experience, ` +
+                         `please take 30 seconds to fill out our Developer Satisfaction survey:\n\n` +
+                         `👉 **[Take the DevSat Survey](${formUrl})**\n\n` +
+                         `*Your feedback is private and directly reviewed by the DevEx team.*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            })
