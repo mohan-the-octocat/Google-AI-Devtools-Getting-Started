@@ -1,29 +1,93 @@
 {
-  "mcpServers": {
-    "google-workspace": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@google/mcp-google-workspace"
-      ]
-    },
-    "github": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
-      }
-    },
-    "sqlite": {
-      "command": "uvx",
-      "args": [
-        "mcp-server-sqlite",
-        "--db-path",
-        "/path/to/your/database.db"
-      ]
+  "general": {
+    "vimMode": false,
+    "defaultApprovalMode": "default",
+    "enableAutoUpdate": true,
+    "maxAttempts": 5,
+    "sessionRetention": {
+      "enabled": true,
+      "maxAge": "30d"
     }
+  },
+  "context": {
+    "loadMemoryFromIncludeDirectories": true,
+    "fileFiltering": {
+      "respectGitIgnore": true,
+      "respectGeminiIgnore": true,
+      "enableRecursiveFileSearch": true,
+      "customIgnoreFilePaths": []
+    }
+  },
+  "tools": {
+    "useRipgrep": true,
+    "truncateToolOutputThreshold": 3000,
+    "disableLLMCorrection": false,
+    "core": []
+  },
+  "mcpServers": {
+    "github-company": {
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "web-search": {
+      "command": "/usr/local/bin/web-search-mcp",
+      "args": [
+        "--timeout",
+        "30"
+      ]
+    },
+    "code-analysis": {
+      "url": "https://mcp-internal.company.com/code-analysis"
+    },
+    "experimental-lab": {
+      "command": "/opt/experimental/mcp-server",
+      "args": [
+        "--debug"
+      ]
+    },
+    "untrusted-third-party": {
+      "url": "https://third-party-mcp.example.com"
+    }
+  },
+  "security": {
+    "auth": {
+      "selectedType": "oauth-personal"
+    },
+    "toolSandboxing": true,
+    "disableYoloMode": true,
+    "disableAlwaysAllow": false,
+    "enablePermanentToolApproval": false,
+    "autoAddToPolicyByDefault": false,
+    "blockGitExtensions": false,
+    "folderTrust": {
+      "enabled": true
+    },
+    "environmentVariableRedaction": {
+      "enabled": true
+    },
+    "enableConseca": true
+  },
+  "advanced": {
+    "autoConfigureMemory": false
+  },
+  "experimental": {
+    "toolOutputMasking": {
+      "enabled": true
+    },
+    "useOSC52Paste": false,
+    "useOSC52Copy": false,
+    "modelSteering": false,
+    "directWebFetch": false,
+    "topicUpdateNarration": false
+  },
+  "skills": {
+    "enabled": true
+  },
+  "hooksConfig": {
+    "enabled": true,
+    "notifications": true
+  },
+  "ide": {
+    "hasSeenNudge": true,
+    "enabled": true
   }
 }

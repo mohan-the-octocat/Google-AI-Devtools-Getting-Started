@@ -10,12 +10,36 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Example 1: Allow Safe Read-Only Commands
+# 1. Global / Fallback Policies (Lowest Priority)
 # ------------------------------------------------------------------------------
-# Allow common read-only commands without requiring user confirmation.
+# By default, we deny all tools to enforce an explicit allowlist.
+[[rule]]
+priority = 50
+toolName = "*"
+decision = "deny"
+
+# ------------------------------------------------------------------------------
+# 2. Allow Core Tools & Safe Read-Only Commands
+# ------------------------------------------------------------------------------
+# Explicitly allow safe read operations and file discovery tools.
 [[rule]]
 priority = 100
-toolName = "run_command"
+toolName = "read_file"
+decision = "allow"
+
+[[rule]]
+priority = 100
+toolName = "glob"
+decision = "allow"
+
+[[rule]]
+priority = 100
+toolName = "search_web"
+decision = "allow"
+
+[[rule]]
+priority = 100
+toolName = "run_shell_command"
 decision = "allow"
 commandPrefix = [
   "git status",
@@ -24,30 +48,19 @@ commandPrefix = [
   "git diff",
   "ls",
   "cat",
-  "echo"
+  "echo",
+  "grep",
+  "find"
 ]
 
 # ------------------------------------------------------------------------------
-# Example 2: Deny Destructive Commands
-# ------------------------------------------------------------------------------
-# Explicitly deny commands that could be excessively destructive.
-[[rule]]
-priority = 200
-toolName = "run_command"
-decision = "deny"
-commandPrefix = [
-  "rm -rf /",
-  "mkfs"
-]
-
-# ------------------------------------------------------------------------------
-# Example 3: Require User Confirmation
+# 3. Require User Confirmation for Mutating Commands
 # ------------------------------------------------------------------------------
 # Require explicit user confirmation before executing potentially
 # state-mutating commands like pushing code or removing files.
 [[rule]]
 priority = 150
-toolName = "run_command"
+toolName = "run_shell_command"
 decision = "ask_user"
 commandPrefix = [
   "git push",
@@ -57,63 +70,113 @@ commandPrefix = [
 ]
 
 # ------------------------------------------------------------------------------
-# Example 4: Tool-Specific Policies
+# 4. Deny Destructive & Sensitive Commands
 # ------------------------------------------------------------------------------
-# Allow the CLI to read files or search the web without prompting every time.
-[[rule]]
-priority = 100
-toolName = "read_file"
-decision = "allow"
-
-[[rule]]
-priority = 100
-toolName = "search_web"
-decision = "allow"
-
-# ------------------------------------------------------------------------------
-# Example 5: MCP Server Policies
-# ------------------------------------------------------------------------------
-# Policies can match specific MCP servers or use wildcards to match tools.
-
-# Allow all tools from a specific MCP server by its configured name
-[[rule]]
-priority = 100
-mcpName = "google-workspace"
-decision = "allow"
-
-# Require user confirmation for any tool from a specific MCP server
-[[rule]]
-priority = 150
-mcpName = "custom-database-mcp"
-decision = "ask_user"
-
-# Target specific MCP tools using wildcards in the toolName
-# MCP tool names typically follow the format: mcp_[serverName]_[toolName]
-[[rule]]
-priority = 120
-toolName = "mcp_github_create_issue"
-decision = "ask_user"
-
-# Globally target all MCP tools using a wildcard
-[[rule]]
-priority = 50
-toolName = "mcp_*"
-decision = "ask_user"
-
-# ------------------------------------------------------------------------------
-# Example 6: Completely Deny an MCP Server
-# ------------------------------------------------------------------------------
-# We give these deny rules a higher priority number (e.g., 200) than the
-# allow or ask_user rules so that the denial takes precedence.
-
-# Deny an entire MCP server and all its tools by its configured name
+# Explicitly deny commands that could be excessively destructive or touch system files.
+# This overrides the "ask_user" rules above due to higher priority (200 > 150).
 [[rule]]
 priority = 200
-mcpName = "mcp-server-name-to-deny"
+toolName = "run_shell_command"
+decision = "deny"
+commandPrefix = [
+  "rm -rf /",
+  "mkfs",
+  "su",
+  "sudo"
+]
+
+# Deny writing to sensitive system paths.
+# We use argsPattern to match the start of the file path argument.
+[[rule]]
+priority = 200
+toolName = "write_file"
+decision = "deny"
+argsPattern = "^/(system|proc|sys)/.*"
+
+# ------------------------------------------------------------------------------
+# 5. General MCP Server Allowances
+# ------------------------------------------------------------------------------
+# Allow trusted servers to operate. (Note: specific tools can still be blocked later)
+[[rule]]
+priority = 100
+mcpName = "github-company"
+decision = "allow"
+
+[[rule]]
+priority = 100
+mcpName = "web-search"
+decision = "allow"
+
+[[rule]]
+priority = 100
+mcpName = "code-analysis"
+decision = "allow"
+
+# ------------------------------------------------------------------------------
+# 6. Specific MCP Tool Restrictions (The "Include List" pattern)
+# ------------------------------------------------------------------------------
+
+# --- GitHub Company ---
+# Explicitly allow specific GitHub actions
+[[rule]]
+priority = 250
+mcpName = "github-company"
+decision = "allow"
+toolName = [
+  "mcp_github_company_search_repositories",
+  "mcp_github_company_get_repository_info",
+  "mcp_github_company_list_files",
+  "mcp_github_company_read_file",
+  "mcp_github_company_search_code",
+  "mcp_github_company_get_issues",
+  "mcp_github_company_get_pull_requests",
+  "mcp_github_company_create_issue",
+  "mcp_github_company_comment_on_issue"
+]
+
+# Deny all other GitHub actions (like deleting repos or branches)
+[[rule]]
+priority = 240
+mcpName = "github-company"
+toolName = "mcp_github_company_*"
 decision = "deny"
 
-# Deny all tools from a specific MCP server using a wildcard on the toolName
+# --- Web Search ---
 [[rule]]
-priority = 200
-toolName = "mcp_github_*"
+priority = 250
+mcpName = "web-search"
+decision = "allow"
+toolName = [
+  "mcp_web_search_search_web",
+  "mcp_web_search_get_page_content"
+]
+
+[[rule]]
+priority = 240
+mcpName = "web-search"
+toolName = "mcp_web_search_*"
+decision = "deny"
+
+# --- Code Analysis ---
+[[rule]]
+priority = 250
+mcpName = "code-analysis"
+decision = "allow"
+toolName = [
+  "mcp_code_analysis_analyze_code_quality",
+  "mcp_code_analysis_find_vulnerabilities",
+  "mcp_code_analysis_suggest_improvements"
+]
+
+# ------------------------------------------------------------------------------
+# 7. Completely Deny Untrusted MCP Servers (Highest Priority)
+# ------------------------------------------------------------------------------
+[[rule]]
+priority = 300
+mcpName = "experimental-lab"
+decision = "deny"
+
+[[rule]]
+priority = 300
+mcpName = "untrusted-third-party"
 decision = "deny"
