@@ -9,13 +9,11 @@ It covers custom Log Analytics (LQL/SQL) queries, Cloud Monitoring configuration
 ## Constituents
 
 1. **[Active Users](#1-day-wise-active-user-count-past-30-60-90-days)**: Track day-wise active user count over custom durations (30, 60, 90 days).
-2. **[User Identity Auditing](#2-user-identities-who-logged-on)**: Enable metadata logging to link telemetry to specific user principal emails for compliance.
+2. **[Unique Active Users](#2-unique-active-users-distinct-user-identity-extraction)**: Query a distinct list of active users that interacted with Gemini Code Assist over a selected period of time using SQL in Log Analytics.
 3. **[Lines of Code Accepted](#3-daily-lines-of-code-accepted-absolute-numbers--ytd)**: Track daily and YTD lines of accepted code using custom Metric Explorer configurations.
 4. **[Granular Telemetry](#4-user-wise-telemetry-who-accepted-which-lines)**: Analyze which user accepted how many lines of code using LQL.
 5. **[Cumulative Acceptance Ratio](#5-cumulative-acceptance-ratio)**: Graph custom ratios in Metrics Explorer (Accepted Suggestions / Total Suggestions).
-6. **[Quota & Rate Limit Management](#6-api-quotas-and-custom-limits)**: Monitor and set custom threshold warnings for GCA API quotas.
-7. **[Advanced Log Analytics](#7-advanced-log-analytics-intricate-user--action-details)**: Query granular raw activity records using Log Analytics SQL to extract exact timestamps, user identities, client environments, API methods, and response payloads.
-8. **[Unique Active Users](#8-unique-active-users-distinct-user-identity-extraction)**: Query a distinct list of active users that interacted with Gemini Code Assist over a selected period of time using SQL in Log Analytics.
+6. **[Advanced Log Analytics](#6-advanced-log-analytics-intricate-user--action-details)**: Query granular raw activity records using Log Analytics SQL to extract exact timestamps, user identities, client environments, API methods, and response payloads.
 
 ---
 
@@ -25,23 +23,29 @@ The default "Overview" page shows rolling averages. Use this method to get a spe
 
 * **Method**: Use the **Observability Monitoring > Dashboards - Gemini Code Assist Metrics**.
 * **Time Range**: Customize the time range to 30, 60, or 90 days by setting the **Relative time** to `30d`, `60d`, or `90d`.
-* **Link Example (30d)**: 
-  [Gemini Code Assist Metrics Builder Console](https://console.cloud.google.com/monitoring/dashboards/builder/66914f46-7e82-4787-b32e-55b55221c048;duration=P30D;filters=var:client?project='Datamatics_project')
+* **Link Example (30d)**: Gemini Code Assist Metrics Builder Console: https://console.cloud.google.com/monitoring/dashboards?project='PROJECTSNAME'
 
 ---
 
-## 2. User Identities (Who logged on?)
+## 2. Unique Active Users (Distinct User Identity Extraction)
 
-For privacy and compliance reasons, individual user IDs are not shown in aggregated dashboards by default.
+To extract a list of unique users who have interacted with Gemini Code Assist in a selected period of time, run a distinct value query in Log Analytics.
 
-* **Solution**: Enable **Metadata Logging**.
-* **How to Enable**: In the Google Cloud Console, navigate to **Admin for Gemini > Settings** and toggle **"Logging for Code Assist metadata"** to **ON**.
-* **Result**: Once enabled, Cloud Logging will capture the `user_id` for every interaction, allowing you to trace active users.
-* **Example LQL (active user emails in past 30 days)**:
-  ```query
-  protoPayload.authenticationInfo.principalEmail:*
-  timestamp >= "2026-04-07T00:00:00Z"
-  ```
+* **Step 1**: In the Google Cloud Console, navigate to **Logging > Log Analytics**.
+* **Step 2**: If prompted, switch to **Builder** mode (SQL query editor).
+* **Step 3**: Paste the following SQL query. Make sure to replace `GCP_PROJECT.global._Default._Default` with your updated project name and dataset/log view, and set/select the correct time range parameter:
+
+```sql
+SELECT DISTINCT
+  JSON_VALUE(labels.user_id) AS user_id
+FROM
+  `GCP_PROJECT.global._Default._Default`
+WHERE
+  labels.user_id IS NOT NULL
+```
+
+### Intricate Details Captured:
+* **`user_id`**: The distinct identifier (e.g., principal email or ID) representing each unique active user that interacted with Gemini Code Assist during the query timeframe.
 
 ---
 
@@ -80,15 +84,7 @@ $$\text{Acceptance Rate} = \frac{\text{Accepted Suggestions}}{\text{Total Sugges
 
 ---
 
-## 6. API Quotas and Custom Limits
-
-* **Quota**: The rate limits set by Google to ensure service stability. For Gemini Code Assist Enterprise, this is typically **2,000 requests per user per day**.
-* **Custom Limits**: Thresholds you can configure within the **Google Cloud Quotas & Limits** page. They allow you to proactively manage usage and prevent unexpected billing spikes if you are on a usage-based plan.
-* **Analysis**: Tracking these metrics helps identify if any users are "hitting the ceiling" of their daily allowance, indicating intense usage (e.g., heavy refactoring) or a need for a higher tier allocation.
-
----
-
-## 7. Advanced Log Analytics (Intricate User & Action Details)
+## 6. Advanced Log Analytics (Intricate User & Action Details)
 
 To query granular, raw activity records containing exact timestamps, user identities, and action categories, use Cloud Logging Log Analytics.
 
@@ -144,25 +140,3 @@ LIMIT 1000
 * **`resource.labels.project_id`**: The Google Cloud project ID hosting the service.
 * **`severity`**: Log entry severity level (e.g., `INFO`, `NOTICE`, `ERROR`).
 * **`text_payload` / `proto_payload` / `json_payload`**: Detailed payloads representing full request/response schemas.
-
----
-
-## 8. Unique Active Users (Distinct User Identity Extraction)
-
-To extract a list of unique users who have interacted with Gemini Code Assist in a selected period of time, run a distinct value query in Log Analytics.
-
-* **Step 1**: In the Google Cloud Console, navigate to **Logging > Log Analytics**.
-* **Step 2**: If prompted, switch to **Builder** mode (SQL query editor).
-* **Step 3**: Paste the following SQL query. Make sure to replace `GCP_PROJECT.global._Default._Default` with your updated project name and dataset/log view, and set/select the correct time range parameter:
-
-```sql
-SELECT DISTINCT
-  JSON_VALUE(labels.user_id) AS user_id
-FROM
-  `GCP_PROJECT.global._Default._Default`
-WHERE
-  labels.user_id IS NOT NULL
-```
-
-### Intricate Details Captured:
-* **`user_id`**: The distinct identifier (e.g., principal email or ID) representing each unique active user that interacted with Gemini Code Assist during the query timeframe.
